@@ -7,9 +7,11 @@
 #include "Buffer_file.h"
 #include "Utils.h"
 
+//utilisé pour ignorer l'alignement sur les structures
+#pragma pack(1)
 struct Header
 {
-	uint8_t FileHeader[8] = {};
+	uint8_t FileHeader[7] = {};
 	uint32_t Files_pos = 0;
 	uint32_t Size = 0;
 };
@@ -41,13 +43,8 @@ int main()
 	Header File_Header;
 	File_Node FileNode;
 
-	for (int8_t nombre = 0; nombre < 7; nombre++)
-	{
-		File_Header.FileHeader[nombre] = Buffer.Read_char();
-	}
-	File_Header.Files_pos = Buffer.Read_int();
-	//en fait je ne sais pas a quoi correspond cette valeur!
-	File_Header.Size = Buffer.Read_int();
+	//recupere le header
+	Buffer.Read_struct(&File_Header, sizeof(File_Header));
 
 	//comparaison a faire pour confirmer que le fichier est du bon format
 	//if (File_Header.FileHeader != FileID)
@@ -60,18 +57,16 @@ int main()
 	std::string Nom;
 	std::string Nom_a_traiter;
 	uint16_t Nombre = 0;
-	std::string Directory_name;
+
+	std::string Path = "e:";
+	std::string Directory = "datapack";
 
 	//on declare sur quel disque on veut extraire les données
-	std::filesystem::current_path("e:");
+	std::filesystem::current_path(Path);
 	
 	while (true)
 	{
-		//on recupere l'arborescence du fichier
-		for (uint8_t nombre = 0; nombre < 255; nombre++)
-		{
-			FileNode.File_name[nombre] = Buffer.Read_char();
-		}
+		Buffer.Read_struct(&FileNode, sizeof(FileNode));
 
 		//on convertit l'arborescence en string, plus facile a traiter
 		Nom_a_traiter = (char*)FileNode.File_name;
@@ -81,14 +76,14 @@ int main()
 		Nom_a_traiter = Nom_a_traiter.substr(0,P);
 
 		//et on crée les repertoires
-		std::filesystem::create_directories("datapack" + Nom_a_traiter);
+		std::filesystem::create_directories(Directory + Nom_a_traiter);
 
 		//on lit la position de depart du fichier dans le gros fichier
-		FileNode.Files_start = Buffer.Read_int();
+		//FileNode.Files_start = Buffer.Read_int();
 		//et sa taille
-		FileNode.Size = Buffer.Read_int();
+		//FileNode.Size = Buffer.Read_int();
 
-		Nom = "e:\\datapack";
+		Nom = Path + "\\" + Directory;
 
 		Nom.append((char*)FileNode.File_name);
 
@@ -119,6 +114,9 @@ int main()
 		Output_file.write(DataAccess, FileNode.Size);
 
 		Output_file.close();
+
+		std::cout << Nombre;
+		std::cout << std::endl;
 
 		Nombre++;
 
